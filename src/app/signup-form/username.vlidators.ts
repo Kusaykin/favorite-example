@@ -8,4 +8,15 @@ export  class UsernameValidators {
 
     return null;
   }
+
+  static shoudBeUnique(control: AbstractControl): Promise<ValidationErrors | null> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (control.value === 'denis')
+          resolve ({shoudBeUnique: true });
+        else
+          resolve(null);
+      }, 2000);
+    });
+  }
 }
