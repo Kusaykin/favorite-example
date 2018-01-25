@@ -15,13 +15,8 @@ export class PostsComponent implements OnInit {
   posts;
 
   ngOnInit(): void {
-    this.service.getPosts()
-      .subscribe(
-        response => {
-          this.posts = response;
-          console.log(response);
-          console.log(typeof(this.posts));
-        });
+    this.service.getAll()
+      .subscribe(posts => this.posts = posts);
   }
 
   constructor(private  service: PostService) {
@@ -30,45 +25,49 @@ export class PostsComponent implements OnInit {
 
   createPost(input: HTMLInputElement) {
     const post = {title: input.value, id: ''};
+    this.posts.splice(0, 0, post); // optimistic style, first create (add in array) then check
     input.value = '';
-    this.service.createPost(post)
+    this.service.create(post)
       .subscribe(
-        response => {
-          post['id'] = response.id;
-          this.posts.splice(0, 0, post);
-          console.log(response);
+        newPost => {
+          post['id'] = newPost.id;
+          console.log(newPost);
           console.log(this.posts);
         },
         (error: AppError) => {
+          this.posts.splice(0, 1); // optimistic style, if error then rollback (remove from array)
+
           if (error instanceof BadInput) {
-            // this.form.setErrors(error.originalError);
+            // this.form.setErrors(error.originalError); // "form" is example
           } else throw error;
         });
   }
 
   updatePost(post) {
-    this.service.updatePost(post)
+    this.service.update(post)
       .subscribe(
-        response => {
-          console.log(response);
+        updatedPost => {
+          console.log(updatedPost);
         });
   }
 
   deletePost(post) {
-    this.service.deletePost(345)
+    const index = this.posts.indexOf(post);
+    this.posts.splice(index, 1); // optimistic style, first delete then check
+
+    this.service.delete(post.id)
       .subscribe(
-        response => {
-          const index = this.posts.indexOf(post);
-          console.log(post);
-          this.posts.splice(index, 1);
-        },
+        null,
         (error: AppError) => {
           if (error instanceof NotFoundError) {
             alert('This post has already been deleted.');
-          } else  throw error;
-        });
+          } else {
+            this.posts.splice(index, 0, post); // optimistic style, if error then rollback
+            throw error;
+          }
+        }
+      );
   }
-
 }
 
 
